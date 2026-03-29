@@ -1,0 +1,92 @@
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum KioskStateKind {
+  IDLE
+  WAITING
+  PAID
+  ERROR
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  businessName String
+  themeColor   String? // hex e.g. #0f766e, optional per-owner accent
+  createdAt    DateTime  @default(now())
+  machines     Machine[]
+}
+
+model Machine {
+  id                           String   @id @default(cuid())
+  userId                       String
+  user                         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  machineName                  String
+  machineSlug                  String
+  squarespaceStoreUrl          String
+  squarespaceSelectionPageUrl  String
+  squarespaceWebhookSecret     String // hex string from Squarespace subscription
+  squarespaceCommerceApiKeyEnc String // AES-GCM encrypted Bearer token for Orders API
+  switchbotTokenEnc            String
+  switchbotSecretEnc           String
+  switchbotDeviceId            String
+  switchbotCommand             String   @default("press") // SwitchBot device command, e.g. press
+  kioskPinHash                 String? // optional bcrypt hash for settings
+  isActive                     Boolean  @default(true)
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  orderEvents OrderEvent[]
+  auditLogs   AuditLog[]
+  kioskState  KioskState?
+
+  @@unique([userId, machineSlug])
+  @@index([userId])
+}
+
+model OrderEvent {
+  id               String   @id @default(cuid())
+  machineId        String
+  machine          Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  externalOrderId  String
+  webhookEventType String
+  webhookSignature String?
+  eventHash        String   @unique
+  paymentStatus    String?
+  unlockTriggered  Boolean  @default(false)
+  unlockTriggeredAt DateTime?
+  rawPayload       Json
+  createdAt        DateTime @default(now())
+
+  @@index([machineId, createdAt])
+}
+
+model KioskState {
+  machineId    String         @id
+  machine      Machine        @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  state        KioskStateKind @default(IDLE)
+  message      String         @default("")
+  lastOrderId  String?
+  lastUpdatedAt DateTime      @default(now()) @updatedAt
+  lastSeenAt   DateTime?      // kiosk heartbeat for healthcheck
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  machineId  String?
+  machine    Machine? @relation(fields: [machineId], references: [id], onDelete: SetNull)
+  action     String
+  details    Json
+  createdAt  DateTime @default(now())
+
+  @@index([machineId, createdAt])
+}
