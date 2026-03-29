@@ -1,6 +1,7 @@
 "use server";
 
 import { hash } from "bcrypt";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
@@ -36,8 +37,19 @@ export async function registerUser(
         businessName: businessName.trim(),
       },
     });
-  } catch {
-    return { ok: false, error: "Email already registered" };
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return { ok: false, error: "Email already registered" };
+    }
+    console.error("registerUser:", e);
+    return {
+      ok: false,
+      error:
+        "Could not create your account (database error). If this keeps happening, check that migrations ran on the server.",
+    };
   }
   return { ok: true };
 }
