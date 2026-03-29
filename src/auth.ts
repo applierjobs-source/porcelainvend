@@ -1,5 +1,8 @@
+import { applySiteUrlEnvDefaults } from "@/lib/normalize-site-url";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+
+applySiteUrlEnvDefaults();
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
