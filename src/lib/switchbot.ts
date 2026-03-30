@@ -144,7 +144,33 @@ export async function unlockDevice(
       };
     }
 
-    return { ok: true, statusCode: res.status, body: parsed };
+    const envelope = parsed as {
+      statusCode?: number;
+      message?: string;
+    };
+    if (
+      typeof envelope !== "object" ||
+      envelope === null ||
+      typeof envelope.statusCode !== "number"
+    ) {
+      return {
+        ok: false,
+        error: `SwitchBot: unexpected response: ${String(text).slice(0, 200)}`,
+      };
+    }
+
+    if (envelope.statusCode !== 100) {
+      const msg = envelope.message ?? `statusCode ${envelope.statusCode}`;
+      return {
+        ok: false,
+        statusCode: envelope.statusCode,
+        error: `SwitchBot: ${msg}`,
+      };
+    }
+
+    // statusCode 100 means the cloud accepted the command; device execution can still fail
+    // (range, hub offline, wrong command for device type). Check hardware if issues persist.
+    return { ok: true, statusCode: envelope.statusCode, body: parsed };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { ok: false, error: msg };
