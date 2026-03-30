@@ -43,6 +43,7 @@ export function MachineWizard({ baseUrl }: { baseUrl: string }) {
   const [pending, setPending] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [webhookSecretSkipped, setWebhookSecretSkipped] = useState(false);
 
   async function finish(next: Partial<WizardValues>) {
     const merged = { ...values, ...next };
@@ -67,6 +68,7 @@ export function MachineWizard({ baseUrl }: { baseUrl: string }) {
       setError(r.error);
       return;
     }
+    setWebhookSecretSkipped(!merged.squarespaceWebhookSecret.trim());
     setCreatedId(r.machineId);
     const url = await QRCode.toDataURL(merged.squarespaceSelectionPageUrl, {
       width: 640,
@@ -144,6 +146,7 @@ export function MachineWizard({ baseUrl }: { baseUrl: string }) {
           baseUrl={baseUrl}
           machineId={createdId}
           qrDataUrl={qrDataUrl}
+          webhookSecretSkipped={webhookSecretSkipped}
           onDone={() => router.push(`/dashboard/machines/${createdId}`)}
         />
       ) : null}
@@ -323,21 +326,25 @@ function Step3({
       }}
     >
       <h2 className="text-lg font-semibold text-zinc-900">Webhook secret</h2>
+      <p className="rounded-lg border border-teal-100 bg-teal-50/80 p-3 text-sm text-teal-950">
+        Optional: you can leave this blank, finish setup, then open this
+        machine in the dashboard and use{" "}
+        <strong>Create webhook in Squarespace</strong> — you need the final
+        webhook URL, which includes your new machine id.
+      </p>
       <p className="text-sm text-zinc-600">
-        Squarespace sends a{" "}
-        <code className="rounded bg-zinc-100 px-1">Squarespace-Signature</code>{" "}
-        header on each delivery. PorcelainVend verifies it with HMAC-SHA256
-        using the subscription secret (hex) shown only once when you create or
-        rotate the webhook.
+        If you already have a hex secret from Squarespace, paste it here.
+        Otherwise skip the field and set up the webhook after the machine is
+        created.
       </p>
       <label className="block text-sm font-medium text-zinc-700">
-        Webhook secret (hex)
+        Webhook secret (hex), optional
         <input
           name="squarespaceWebhookSecret"
-          required
           autoComplete="off"
           defaultValue={values.squarespaceWebhookSecret}
           className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-sm"
+          placeholder="Leave blank to configure later"
         />
       </label>
       <div className="flex gap-3">
@@ -452,11 +459,13 @@ function Step5({
   baseUrl,
   machineId,
   qrDataUrl,
+  webhookSecretSkipped,
   onDone,
 }: {
   baseUrl: string;
   machineId: string;
   qrDataUrl: string | null;
+  webhookSecretSkipped: boolean;
   onDone: () => void;
 }) {
   const kioskUrl = `${baseUrl}/kiosk/${machineId}`;
@@ -465,6 +474,13 @@ function Step5({
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold text-zinc-900">Kiosk assets</h2>
+      {webhookSecretSkipped ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+          Next: open the machine dashboard and click{" "}
+          <strong>Create webhook in Squarespace</strong> under Kiosk &amp;
+          webhook so order notifications are verified and processed.
+        </p>
+      ) : null}
       <div>
         <div className="text-sm font-medium text-zinc-700">Kiosk URL (tablet)</div>
         <code className="mt-1 block break-all rounded-lg bg-zinc-100 px-3 py-2 text-sm">

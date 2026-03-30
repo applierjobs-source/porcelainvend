@@ -56,6 +56,15 @@ export default async function MachineDetailPage({
         </Link>
       </div>
 
+      {!machine.squarespaceWebhookSecret ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <strong>Webhook signing secret not set.</strong> Squarespace
+          deliveries will be rejected until you use{" "}
+          <strong>Create webhook in Squarespace</strong> below (or paste a
+          secret under Rotate webhook secret).
+        </div>
+      ) : null}
+
       <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
           Kiosk &amp; webhook

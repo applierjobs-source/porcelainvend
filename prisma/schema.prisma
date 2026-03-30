@@ -34,7 +34,7 @@ model Machine {
   machineSlug                  String
   squarespaceStoreUrl          String
   squarespaceSelectionPageUrl  String
-  squarespaceWebhookSecret     String // hex string from Squarespace subscription
+  squarespaceWebhookSecret     String? // hex from Squarespace; null until provisioned or pasted
   squarespaceCommerceApiKeyEnc String // AES-GCM encrypted Bearer token for Orders API
   switchbotTokenEnc            String
   switchbotSecretEnc           String

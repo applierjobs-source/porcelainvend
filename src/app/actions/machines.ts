@@ -20,10 +20,7 @@ const machineBase = z.object({
   machineSlug: slugSchema,
   squarespaceStoreUrl: httpsUrl,
   squarespaceSelectionPageUrl: httpsUrl,
-  squarespaceWebhookSecret: z
-    .string()
-    .min(16)
-    .regex(/^[0-9a-fA-F]+$/, "Webhook secret must be hexadecimal"),
+  squarespaceWebhookSecret: z.string().optional(),
   squarespaceCommerceApiKey: z.string().min(10),
   switchbotToken: z.string().min(4),
   switchbotSecret: z.string().min(4),
@@ -49,6 +46,19 @@ export async function createMachine(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
   }
   const data = parsed.data;
+  const secretRaw = (data.squarespaceWebhookSecret ?? "").trim();
+  let squarespaceWebhookSecret: string | null = null;
+  if (secretRaw) {
+    if (secretRaw.length < 16 || !/^[0-9a-fA-F]+$/.test(secretRaw)) {
+      return {
+        ok: false,
+        error:
+          "Webhook secret must be at least 16 hexadecimal characters, or leave it blank and create the webhook from the machine page after saving.",
+      };
+    }
+    squarespaceWebhookSecret = secretRaw;
+  }
+
   try {
     assertSelectionOnStore(
       data.squarespaceStoreUrl,
@@ -69,7 +79,7 @@ export async function createMachine(
         machineSlug: data.machineSlug,
         squarespaceStoreUrl: data.squarespaceStoreUrl,
         squarespaceSelectionPageUrl: data.squarespaceSelectionPageUrl,
-        squarespaceWebhookSecret: data.squarespaceWebhookSecret.trim(),
+        squarespaceWebhookSecret,
         squarespaceCommerceApiKeyEnc: encryptSecret(
           data.squarespaceCommerceApiKey.trim()
         ),

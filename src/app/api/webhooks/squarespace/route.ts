@@ -77,9 +77,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "machine_not_found" }, { status: 404 });
   }
 
-  if (
-    !verifySquarespaceSignature(rawBody, machine.squarespaceWebhookSecret, sig)
-  ) {
+  const webhookSecret = machine.squarespaceWebhookSecret?.trim() ?? "";
+  if (!webhookSecret) {
+    return NextResponse.json(
+      { error: "webhook_secret_not_configured" },
+      { status: 503 }
+    );
+  }
+
+  if (!verifySquarespaceSignature(rawBody, webhookSecret, sig)) {
     logAudit(machine.id, "webhook_signature_failed", {});
     return NextResponse.json({ error: "invalid_signature" }, { status: 401 });
   }
