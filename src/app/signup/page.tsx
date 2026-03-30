@@ -81,6 +81,17 @@ export default function SignupPage() {
             {error}
           </p>
         ) : null}
+        <p className="text-xs text-zinc-500">
+          By creating an account you agree to our{" "}
+          <Link href="/terms" className="text-teal-700 underline">
+            Terms &amp; conditions
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="text-teal-700 underline">
+            Privacy policy
+          </Link>
+          .
+        </p>
         <button
           type="submit"
           disabled={pending}

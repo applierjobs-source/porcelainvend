@@ -106,6 +106,7 @@ openssl rand -hex 32      # ENCRYPTION_KEY
 | `/kiosk/[machineId]/poster` | Printable poster |
 | `POST /api/webhooks/squarespace?machineId=` | Squarespace webhook |
 | `GET /api/squarespace/oauth/start`, `/callback` | Squarespace OAuth connect |
+| `/terms`, `/privacy` | Terms of service & privacy policy (for OAuth / storefront registration) |
 | `GET /api/machines/[machineId]/events/stream` | Kiosk SSE |
 | `POST /api/machines/[machineId]/unlock-test` | Owner unlock test |
 | `POST /api/machines/[machineId]/heartbeat` | Kiosk liveness (health) |
