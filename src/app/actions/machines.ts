@@ -5,13 +5,15 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { encryptSecret } from "@/lib/encryption";
+import { decryptSecret, encryptSecret } from "@/lib/encryption";
 import {
   assertSelectionOnStore,
   httpsUrl,
   slugSchema,
 } from "@/lib/url-rules";
 import { logAudit } from "@/lib/audit";
+import { getPublicBaseUrl } from "@/lib/public-url";
+import { createSquarespaceWebhookSubscription } from "@/lib/squarespace-webhook-subscription";
 
 const machineBase = z.object({
   machineName: z.string().min(1).max(120),
@@ -165,6 +167,93 @@ export async function updateMachine(
   revalidatePath("/dashboard/machines");
   revalidatePath(`/dashboard/machines/${machineId}`);
   return { ok: true };
+}
+
+function squarespaceApiErrorMessage(status: number, body: unknown): string {
+  if (body && typeof body === "object" && "message" in body) {
+    const m = (body as { message?: unknown }).message;
+    if (typeof m === "string" && m.trim()) return m.trim();
+  }
+  if (body && typeof body === "object" && "errors" in body) {
+    const e = (body as { errors?: unknown }).errors;
+    if (Array.isArray(e) && e.length) return JSON.stringify(e);
+  }
+  try {
+    return JSON.stringify(body);
+  } catch {
+    return `HTTP ${status}`;
+  }
+}
+
+/** Calls Squarespace Commerce API to register this machine’s webhook URL and saves the returned secret. */
+export async function provisionSquarespaceWebhook(
+  machineId: string
+): Promise<
+  | {
+      ok: true;
+      subscriptionId: string;
+      endpointUrl: string;
+      topics: string[];
+    }
+  | { ok: false; error: string }
+> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Unauthorized" };
+
+  const machine = await prisma.machine.findFirst({
+    where: { id: machineId, userId: session.user.id },
+  });
+  if (!machine) return { ok: false, error: "Not found" };
+
+  let apiKey: string;
+  try {
+    apiKey = decryptSecret(machine.squarespaceCommerceApiKeyEnc);
+  } catch {
+    return {
+      ok: false,
+      error:
+        "Could not read your Commerce API key. Re-save it under Edit settings.",
+    };
+  }
+
+  const baseUrl = await getPublicBaseUrl();
+  const endpointUrl = `${baseUrl}/api/webhooks/squarespace?machineId=${machine.id}`;
+
+  if (!/^https:\/\//i.test(endpointUrl)) {
+    return {
+      ok: false,
+      error:
+        "Webhook URL must use HTTPS. Set NEXT_PUBLIC_APP_URL (or AUTH_URL) to your public https:// site URL on Railway.",
+    };
+  }
+
+  const result = await createSquarespaceWebhookSubscription(
+    apiKey,
+    endpointUrl
+  );
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: `Squarespace API (${result.status}): ${squarespaceApiErrorMessage(result.status, result.body)}`,
+    };
+  }
+
+  await prisma.machine.update({
+    where: { id: machineId },
+    data: { squarespaceWebhookSecret: result.secret },
+  });
+
+  logAudit(machineId, "squarespace_webhook_provisioned", {
+    subscriptionId: result.id,
+  });
+  revalidatePath(`/dashboard/machines/${machineId}`);
+  return {
+    ok: true,
+    subscriptionId: result.id,
+    endpointUrl: result.endpointUrl,
+    topics: result.topics,
+  };
 }
 
 export async function rotateWebhookSecret(

@@ -6,6 +6,7 @@ import { getPublicBaseUrl } from "@/lib/public-url";
 import { UnlockTestButton } from "@/components/UnlockTestButton";
 import { MachineDisableForm } from "@/components/MachineDisableForm";
 import { SecretRotateForm } from "@/components/SecretRotateForm";
+import { SquarespaceWebhookProvisionForm } from "@/components/SquarespaceWebhookProvisionForm";
 
 export default async function MachineDetailPage({
   params,
@@ -94,6 +95,17 @@ export default async function MachineDetailPage({
             </a>
           </div>
         </dl>
+        <div className="mt-8 border-t border-zinc-100 pt-8">
+          <h3 className="text-sm font-medium text-zinc-800">
+            Create webhook (browser)
+          </h3>
+          <div className="mt-3">
+            <SquarespaceWebhookProvisionForm
+              machineId={machine.id}
+              webhookUrl={webhookUrl}
+            />
+          </div>
+        </div>
       </section>
 
       <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
