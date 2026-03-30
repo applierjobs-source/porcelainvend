@@ -20,9 +20,19 @@ Multi-tenant **web-only** smart vending kiosk: owners configure a Squarespace ch
    - **Step 3:** Webhook **secret** (hex from Squarespace when you create/rotate the subscription).
    - **Step 4:** SwitchBot token, secret, device ID, optional command (default `press`).
    - **Step 5:** **Kiosk URL**, **webhook URL** (includes `machineId`), on-screen QR, downloadable PNG.
-3. In Squarespace, create a **webhook subscription** whose URL is exactly:
+3. Create a **webhook subscription** in Squarespace (the `secret` is only returned from their API when you create or rotate it — there is no copy-paste screen in the site editor for most setups).
 
-   `https://YOUR_DOMAIN/api/webhooks/squarespace?machineId=YOUR_MACHINE_ID`
+   **Option A — script in this repo** (from your machine, never commit your key):
+
+   ```bash
+   export SQUARESPACE_API_KEY="your_developer_api_key"
+   export WEBHOOK_URL="https://YOUR_DOMAIN/api/webhooks/squarespace?machineId=YOUR_MACHINE_ID"
+   npm run squarespace:webhook
+   ```
+
+   The script prints the **hex secret** and subscription id; paste the secret into PorcelainVend wizard step 3.
+
+   **Option B** — `POST` to Squarespace yourself: [Create a webhook subscription](https://developers.squarespace.com/commerce-apis/create-webhook-subscription).
 
    Subscribe to **order** events as needed (`order.create` / `order.update`). Each delivery includes `Squarespace-Signature`; this app verifies it with your stored secret and is **idempotent** per notification id.
 

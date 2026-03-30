@@ -9,6 +9,7 @@
     "lint": "next lint",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
+    "squarespace:webhook": "node scripts/create-squarespace-webhook.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {
