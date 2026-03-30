@@ -9,6 +9,7 @@ import { SecretRotateForm } from "@/components/SecretRotateForm";
 import { SquarespaceWebhookProvisionForm } from "@/components/SquarespaceWebhookProvisionForm";
 import { SquarespaceOAuthPanel } from "@/components/SquarespaceOAuthPanel";
 import { isSquarespaceOAuthConfigured } from "@/lib/squarespace-oauth";
+import { canProvisionSquarespaceWebhookViaApi } from "@/lib/squarespace-oauth-machine";
 
 export default async function MachineDetailPage({
   params,
@@ -161,6 +162,9 @@ export default async function MachineDetailPage({
               <SquarespaceWebhookProvisionForm
                 machineId={machine.id}
                 webhookUrl={webhookUrl}
+                autoProvisionAvailable={canProvisionSquarespaceWebhookViaApi(
+                  machine
+                )}
               />
             </div>
           </div>

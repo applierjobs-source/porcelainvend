@@ -67,7 +67,10 @@ export async function getValidSquarespaceOAuthAccessToken(
   return next.accessToken;
 }
 
-/** Prefer env override, then OAuth (with refresh), then Developer API key. */
+/**
+ * Bearer token for POST /webhook_subscriptions only. Squarespace rejects site
+ * Developer API keys here — do not fall back to squarespaceCommerceApiKeyEnc.
+ */
 export async function resolveSquarespaceWebhookBearerToken(
   machine: Machine
 ): Promise<string> {
@@ -81,5 +84,15 @@ export async function resolveSquarespaceWebhookBearerToken(
     return getValidSquarespaceOAuthAccessToken(machine.id);
   }
 
-  return decryptSecret(machine.squarespaceCommerceApiKeyEnc);
+  throw new Error(
+    "Webhook registration needs an OAuth access token (Connect Squarespace or set SQUARESPACE_WEBHOOK_ACCESS_TOKEN). Your Commerce Developer API key cannot call the webhook API."
+  );
+}
+
+/** True if this server can call Squarespace to create a webhook for this machine. */
+export function canProvisionSquarespaceWebhookViaApi(
+  machine: Pick<Machine, "squarespaceOAuthRefreshTokenEnc">
+): boolean {
+  if (process.env.SQUARESPACE_WEBHOOK_ACCESS_TOKEN?.trim()) return true;
+  return Boolean(machine.squarespaceOAuthRefreshTokenEnc);
 }

@@ -18,7 +18,10 @@ import {
   fetchSwitchBotDevices,
   type SwitchBotDeviceRow,
 } from "@/lib/switchbot";
-import { resolveSquarespaceWebhookBearerToken } from "@/lib/squarespace-oauth-machine";
+import {
+  canProvisionSquarespaceWebhookViaApi,
+  resolveSquarespaceWebhookBearerToken,
+} from "@/lib/squarespace-oauth-machine";
 
 const machineBase = z.object({
   machineName: z.string().min(1).max(120),
@@ -220,6 +223,14 @@ export async function provisionSquarespaceWebhook(
   });
   if (!machine) return { ok: false, error: "Not found" };
 
+  if (!canProvisionSquarespaceWebhookViaApi(machine)) {
+    return {
+      ok: false,
+      error:
+        "One-click webhook setup needs Connect Squarespace (OAuth) or Railway env SQUARESPACE_WEBHOOK_ACCESS_TOKEN. For manual setup: copy the webhook URL below, create the subscription with Squarespace’s API using an OAuth token, then paste the hex secret under Rotate webhook secret.",
+    };
+  }
+
   let bearerToken: string;
   try {
     bearerToken = await resolveSquarespaceWebhookBearerToken(machine);
@@ -229,9 +240,9 @@ export async function provisionSquarespaceWebhook(
       ok: false,
       error:
         msg.includes("OAuth is not configured") || msg.includes("not connected")
-          ? `${msg} Connect Squarespace on this machine’s page (or set SQUARESPACE_WEBHOOK_ACCESS_TOKEN), then try again.`
+          ? `${msg} Reconnect on this machine’s page or set SQUARESPACE_WEBHOOK_ACCESS_TOKEN, then try again.`
           : msg.includes("ENCRYPTION_KEY") || msg.includes("invalid ciphertext")
-            ? "Could not read stored Squarespace credentials. Re-save your Commerce API key under Edit settings, or reconnect Squarespace OAuth."
+            ? "Could not read stored OAuth tokens. Reconnect Squarespace or set SQUARESPACE_WEBHOOK_ACCESS_TOKEN."
             : msg,
     };
   }
@@ -254,17 +265,9 @@ export async function provisionSquarespaceWebhook(
 
   if (!result.ok) {
     const apiMsg = squarespaceApiErrorMessage(result.status, result.body);
-    let suffix = "";
-    if (result.status === 401) {
-      const combined = `${apiMsg} ${JSON.stringify(result.body)}`.toLowerCase();
-      if (combined.includes("oauth")) {
-        suffix =
-          " Use “Connect Squarespace” on this page first (OAuth), or set SQUARESPACE_WEBHOOK_ACCESS_TOKEN. The site Developer API key alone cannot register webhooks. https://developers.squarespace.com/commerce-apis/webhook-subscriptions-overview";
-      }
-    }
     return {
       ok: false,
-      error: `Squarespace API (${result.status}): ${apiMsg}${suffix}`,
+      error: `Squarespace API (${result.status}): ${apiMsg}`,
     };
   }
 

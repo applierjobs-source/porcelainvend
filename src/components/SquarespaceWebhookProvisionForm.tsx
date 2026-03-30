@@ -7,9 +7,12 @@ import { provisionSquarespaceWebhook } from "@/app/actions/machines";
 export function SquarespaceWebhookProvisionForm({
   machineId,
   webhookUrl,
+  autoProvisionAvailable,
 }: {
   machineId: string;
   webhookUrl: string;
+  /** OAuth connected or SQUARESPACE_WEBHOOK_ACCESS_TOKEN on server */
+  autoProvisionAvailable: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -33,25 +36,42 @@ export function SquarespaceWebhookProvisionForm({
   return (
     <div className="space-y-4">
       <div className="space-y-2 text-xs text-zinc-600">
-        <p>
-          Uses an <strong>OAuth access token</strong> after you{" "}
-          <strong>Connect Squarespace</strong> above (or{" "}
-          <code className="rounded bg-zinc-100 px-1 font-mono text-[11px]">
-            SQUARESPACE_WEBHOOK_ACCESS_TOKEN
-          </code>{" "}
-          on the server). Your site Developer API key is still used to{" "}
-          <em>load orders</em> after Squarespace notifies this app ; it cannot{" "}
-          register webhooks by itself (
-          <a
-            href="https://developers.squarespace.com/commerce-apis/webhook-subscriptions-overview"
-            className="text-teal-700 underline"
-            target="_blank"
-            rel="noreferrer"
-          >
-            docs
-          </a>
-          ).
-        </p>
+        {autoProvisionAvailable ? (
+          <p>
+            Registers the webhook with Squarespace using an OAuth access token
+            (from <strong>Connect Squarespace</strong> above, or{" "}
+            <code className="rounded bg-zinc-100 px-1 font-mono text-[11px]">
+              SQUARESPACE_WEBHOOK_ACCESS_TOKEN
+            </code>{" "}
+            on the server). Your Commerce Developer API key is only for{" "}
+            <em>loading orders</em> after a notification (
+            <a
+              href="https://developers.squarespace.com/commerce-apis/webhook-subscriptions-overview"
+              className="text-teal-700 underline"
+              target="_blank"
+              rel="noreferrer"
+            >
+              docs
+            </a>
+            ).
+          </p>
+        ) : (
+          <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-zinc-700">
+            <p className="font-medium text-zinc-900">Manual webhook setup</p>
+            <p className="mt-2">
+              Squarespace only accepts an <strong>OAuth</strong> bearer token to
+              create subscriptions — not your site Developer API key. Since
+              OAuth isn’t connected here, use <strong>Copy URL</strong>, create
+              the subscription with Squarespace’s API (or any tool that can send{" "}
+              <code className="font-mono text-[11px]">POST /webhook_subscriptions</code>{" "}
+              with a valid token), subscribe to{" "}
+              <code className="font-mono text-[11px]">order.create</code> and{" "}
+              <code className="font-mono text-[11px]">order.update</code>, then
+              paste the returned <strong>hex secret</strong> under{" "}
+              <strong>Rotate webhook secret</strong> on this page.
+            </p>
+          </div>
+        )}
         <p className="text-zinc-500">
           If a subscription already exists for this URL, remove it in Squarespace
           first to avoid duplicate deliveries.
@@ -69,29 +89,31 @@ export function SquarespaceWebhookProvisionForm({
           {copied ? "Copied" : "Copy URL"}
         </button>
       </div>
-      <button
-        type="button"
-        disabled={pending}
-        onClick={async () => {
-          setError(null);
-          setSuccess(null);
-          setPending(true);
-          const r = await provisionSquarespaceWebhook(machineId);
-          setPending(false);
-          if (!r.ok) {
-            setError(r.error);
-            return;
-          }
-          setSuccess({
-            subscriptionId: r.subscriptionId,
-            topics: r.topics,
-          });
-          router.refresh();
-        }}
-        className="rounded-lg bg-teal-700 py-2 px-4 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
-      >
-        {pending ? "Contacting Squarespace…" : "Create webhook in Squarespace"}
-      </button>
+      {autoProvisionAvailable ? (
+        <button
+          type="button"
+          disabled={pending}
+          onClick={async () => {
+            setError(null);
+            setSuccess(null);
+            setPending(true);
+            const r = await provisionSquarespaceWebhook(machineId);
+            setPending(false);
+            if (!r.ok) {
+              setError(r.error);
+              return;
+            }
+            setSuccess({
+              subscriptionId: r.subscriptionId,
+              topics: r.topics,
+            });
+            router.refresh();
+          }}
+          className="rounded-lg bg-teal-700 py-2 px-4 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
+        >
+          {pending ? "Contacting Squarespace…" : "Create webhook in Squarespace"}
+        </button>
+      ) : null}
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       {success ? (
         <div className="rounded-lg border border-teal-200 bg-teal-50/80 p-4 text-sm text-teal-950">
