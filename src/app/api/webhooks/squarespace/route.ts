@@ -13,6 +13,29 @@ export const runtime = "nodejs";
 
 const USER_AGENT = "PorcelainVend/1.0 (Squarespace webhook)";
 
+/** Browsers send GET; Squarespace sends POST. This confirms the URL and machine exist. */
+export async function GET(req: NextRequest) {
+  const machineId = req.nextUrl.searchParams.get("machineId");
+  if (!machineId) {
+    return NextResponse.json({ error: "missing machineId" }, { status: 400 });
+  }
+
+  const machine = await prisma.machine.findFirst({
+    where: { id: machineId, isActive: true },
+    select: { id: true },
+  });
+  if (!machine) {
+    return NextResponse.json({ error: "machine_not_found" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    ok: true,
+    message:
+      "PorcelainVend Squarespace webhook. Squarespace must POST JSON here with Squarespace-Signature.",
+    machineId: machine.id,
+  });
+}
+
 type WebhookBody = {
   id?: string;
   topic?: string;
