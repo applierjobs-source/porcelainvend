@@ -68,10 +68,16 @@ export default async function MachineDetailPage({
 
       {!machine.squarespaceWebhookSecret ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          <strong>Webhook signing secret not set.</strong> Squarespace
-          deliveries will be rejected until you use{" "}
-          <strong>Create webhook in Squarespace</strong> below (or paste a
-          secret under Rotate webhook secret).
+          <strong>Webhook signing secret not set.</strong> Squarespace cannot POST
+          verified webhooks until you paste the hex secret under{" "}
+          <strong>Rotate webhook secret</strong>.
+          <span className="mt-2 block text-amber-900/90">
+            <strong>Fallback:</strong> While the tablet is on the{" "}
+            <strong>kiosk</strong> page, this app polls Squarespace&apos;s Orders
+            API every ~45s using your saved <strong>Commerce API key</strong> to
+            detect new paid orders (no OAuth approval required). Add the secret
+            when you can for faster, push-style webhooks.
+          </span>
         </div>
       ) : null}
 

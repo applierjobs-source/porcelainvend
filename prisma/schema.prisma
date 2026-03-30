@@ -40,6 +40,8 @@ model Machine {
   squarespaceOAuthRefreshTokenEnc  String?
   squarespaceOAuthAccessTokenEnc   String?
   squarespaceOAuthAccessExpiresAt  DateTime?
+  /// Cursor for Commerce API list-orders polling when webhook secret is unset (kiosk heartbeat).
+  lastSquarespaceOrderPollAt       DateTime?
   switchbotTokenEnc            String
   switchbotSecretEnc           String
   switchbotDeviceId            String

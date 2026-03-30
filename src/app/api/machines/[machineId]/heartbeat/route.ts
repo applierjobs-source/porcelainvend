@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
+import { maybePollSquarespaceOrdersFromKiosk } from "@/lib/squarespace-order-poll";
 
 export async function POST(
   req: NextRequest,
@@ -32,6 +33,8 @@ export async function POST(
     },
     update: { lastSeenAt: now },
   });
+
+  void maybePollSquarespaceOrdersFromKiosk(machineId).catch(() => {});
 
   return NextResponse.json({ ok: true, at: now.toISOString() });
 }

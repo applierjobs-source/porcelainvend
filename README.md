@@ -51,7 +51,7 @@ If you **change the Squarespace page slug** after printing QR codes, old codes s
 ## Webhook & payment flow
 
 1. Customer pays on Squarespace (on their phone).
-2. Squarespace POSTs JSON to `/api/webhooks/squarespace?machineId=…` with `Squarespace-Signature`.
+2. Squarespace POSTs JSON to `/api/webhooks/squarespace?machineId=…` with `Squarespace-Signature` **or**, if no webhook secret is stored yet, the **kiosk heartbeat** polls the Orders API (Commerce Developer API key) for recent orders while the tablet stays on the kiosk page.
 3. The app verifies HMAC-SHA256 over the **raw body** with the machine’s hex secret, dedupes by notification id, fetches the order via **Orders API**, checks it is payable, calls **SwitchBot** to unlock, writes `OrderEvent` + `AuditLog`, sets `KioskState` to `PAID`, **SSE** updates the tablet, then returns to **`IDLE` after 15s** (best effort on the Node process; for **serverless** you should move the delay to a queue/worker).
 
 ## Local development
