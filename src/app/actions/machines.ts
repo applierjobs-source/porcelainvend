@@ -14,6 +14,10 @@ import {
 import { logAudit } from "@/lib/audit";
 import { getPublicBaseUrl } from "@/lib/public-url";
 import { createSquarespaceWebhookSubscription } from "@/lib/squarespace-webhook-subscription";
+import {
+  fetchSwitchBotDevices,
+  type SwitchBotDeviceRow,
+} from "@/lib/switchbot";
 
 const machineBase = z.object({
   machineName: z.string().min(1).max(120),
@@ -315,4 +319,54 @@ export async function setMachineActive(
   revalidatePath("/dashboard/machines");
   revalidatePath(`/dashboard/machines/${machineId}`);
   return { ok: true };
+}
+
+/** Resolve token/secret from overrides or saved machine; call SwitchBot device list. */
+export async function listSwitchBotDevicesAction(
+  machineId: string | null,
+  tokenOverride: string,
+  secretOverride: string
+): Promise<
+  | { ok: true; devices: SwitchBotDeviceRow[] }
+  | { ok: false; error: string }
+> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Unauthorized" };
+
+  const to = tokenOverride.trim();
+  const so = secretOverride.trim();
+
+  let token: string;
+  let secret: string;
+
+  if (to && so) {
+    token = to;
+    secret = so;
+  } else if (machineId) {
+    const machine = await prisma.machine.findFirst({
+      where: { id: machineId, userId: session.user.id },
+    });
+    if (!machine) return { ok: false, error: "Machine not found" };
+    try {
+      token = decryptSecret(machine.switchbotTokenEnc);
+      secret = decryptSecret(machine.switchbotSecretEnc);
+    } catch {
+      return {
+        ok: false,
+        error:
+          "Enter SwitchBot token and secret in the form, then try again (or save them first).",
+      };
+    }
+  } else {
+    return {
+      ok: false,
+      error: "Enter your SwitchBot token and secret above, then click look up again.",
+    };
+  }
+
+  const r = await fetchSwitchBotDevices(token, secret);
+  if (!r.ok) {
+    return { ok: false, error: r.error };
+  }
+  return { ok: true, devices: r.devices };
 }

@@ -21,6 +21,82 @@ export type SwitchBotResult =
   | { ok: true; statusCode: number; body: unknown }
   | { ok: false; error: string; statusCode?: number };
 
+export type SwitchBotDeviceRow = {
+  deviceId: string;
+  deviceName: string;
+  deviceType: string;
+};
+
+/**
+ * Lists cloud-visible devices (deviceId is what you paste into PorcelainVend).
+ */
+export async function fetchSwitchBotDevices(
+  token: string,
+  secret: string
+): Promise<
+  | { ok: true; devices: SwitchBotDeviceRow[] }
+  | { ok: false; error: string; statusCode?: number }
+> {
+  const { t, nonce, signature } = switchbotSign(token, secret);
+  try {
+    const res = await fetch(`${BASE}/devices`, {
+      method: "GET",
+      headers: {
+        Authorization: token,
+        t,
+        nonce,
+        sign: signature,
+      },
+    });
+
+    const text = await res.text();
+    let parsed: unknown = null;
+    try {
+      parsed = text ? JSON.parse(text) : null;
+    } catch {
+      parsed = text;
+    }
+
+    const envelope = parsed as {
+      statusCode?: number;
+      message?: string;
+      body?: { deviceList?: unknown[] };
+    };
+
+    if (!res.ok) {
+      return {
+        ok: false,
+        statusCode: res.status,
+        error: `SwitchBot HTTP ${res.status}: ${String(text).slice(0, 200)}`,
+      };
+    }
+
+    if (envelope.statusCode !== 100) {
+      const msg = envelope.message ?? `statusCode ${envelope.statusCode ?? "?"}`;
+      return { ok: false, error: `SwitchBot: ${msg}` };
+    }
+
+    const rawList = envelope.body?.deviceList ?? [];
+    const devices: SwitchBotDeviceRow[] = [];
+    for (const row of rawList) {
+      if (!row || typeof row !== "object") continue;
+      const r = row as Record<string, unknown>;
+      const deviceId = typeof r.deviceId === "string" ? r.deviceId : "";
+      if (!deviceId) continue;
+      devices.push({
+        deviceId,
+        deviceName: typeof r.deviceName === "string" ? r.deviceName : "(unnamed)",
+        deviceType: typeof r.deviceType === "string" ? r.deviceType : "Unknown",
+      });
+    }
+
+    return { ok: true, devices };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: msg };
+  }
+}
+
 /**
  * Sends a command to a SwitchBot device (default `press` for Bot / relay-style unlock).
  */

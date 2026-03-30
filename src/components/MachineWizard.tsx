@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createMachine } from "@/app/actions/machines";
 import QRCode from "qrcode";
+import { SwitchBotDeviceLookup } from "@/components/SwitchBotDeviceLookup";
 
 const STEPS = 5;
 
@@ -393,8 +394,9 @@ function Step4({
     >
       <h2 className="text-lg font-semibold text-zinc-900">SwitchBot</h2>
       <p className="text-sm text-zinc-600">
-        Token, secret, and device ID from the SwitchBot app. Credentials are
-        encrypted at rest.
+        Token and secret come from the SwitchBot app (Profile → Developer
+        options). The device ID is often hidden in the app — use look up below
+        after entering token and secret. Credentials are encrypted at rest.
       </p>
       <label className="block text-sm font-medium text-zinc-700">
         Token
@@ -416,6 +418,7 @@ function Step4({
           className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-sm"
         />
       </label>
+      <SwitchBotDeviceLookup machineId={null} />
       <label className="block text-sm font-medium text-zinc-700">
         Device ID
         <input

@@ -4,6 +4,7 @@ import type { Machine } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { updateMachine } from "@/app/actions/machines";
+import { SwitchBotDeviceLookup } from "@/components/SwitchBotDeviceLookup";
 
 export function MachineEditForm({ machine }: { machine: Machine }) {
   const router = useRouter();
@@ -83,6 +84,23 @@ export function MachineEditForm({ machine }: { machine: Machine }) {
         />
       </label>
       <label className="block text-sm font-medium text-zinc-700">
+        New SwitchBot token (leave blank to keep)
+        <input
+          name="switchbotToken"
+          autoComplete="off"
+          className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-sm"
+        />
+      </label>
+      <label className="block text-sm font-medium text-zinc-700">
+        New SwitchBot secret (leave blank to keep)
+        <input
+          name="switchbotSecret"
+          autoComplete="off"
+          className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-sm"
+        />
+      </label>
+      <SwitchBotDeviceLookup machineId={machine.id} />
+      <label className="block text-sm font-medium text-zinc-700">
         SwitchBot device ID
         <input
           name="switchbotDeviceId"
@@ -96,22 +114,6 @@ export function MachineEditForm({ machine }: { machine: Machine }) {
         <input
           name="switchbotCommand"
           defaultValue={machine.switchbotCommand}
-          className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-sm"
-        />
-      </label>
-      <label className="block text-sm font-medium text-zinc-700">
-        New SwitchBot token (leave blank to keep)
-        <input
-          name="switchbotToken"
-          autoComplete="off"
-          className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-sm"
-        />
-      </label>
-      <label className="block text-sm font-medium text-zinc-700">
-        New SwitchBot secret (leave blank to keep)
-        <input
-          name="switchbotSecret"
-          autoComplete="off"
           className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-sm"
         />
       </label>
