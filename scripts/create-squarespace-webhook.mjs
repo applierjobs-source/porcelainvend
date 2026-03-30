@@ -3,12 +3,15 @@
  * Create a Squarespace webhook subscription and print the secret (show-once).
  *
  * Prerequisites:
- *   - Commerce API key from Squarespace: Settings → Advanced → Developer API Keys
- *     (must include permission to use Webhook Subscriptions + Orders API for order.* topics)
+ *   - OAuth access token (Bearer) for Webhook Subscriptions — site Developer API keys
+ *     are rejected for POST /webhook_subscriptions (401). See:
+ *     https://developers.squarespace.com/commerce-apis/webhook-subscriptions-overview
+ *     Obtain a token via https://developers.squarespace.com/oauth or set Railway env
+ *     SQUARESPACE_WEBHOOK_ACCESS_TOKEN and use the dashboard button instead of this script.
  *   - Your PorcelainVend webhook URL including ?machineId=...
  *
  * Usage:
- *   export SQUARESPACE_API_KEY="your_key_here"
+ *   export SQUARESPACE_API_KEY="your_oauth_access_token_here"
  *   export WEBHOOK_URL="https://your-app.up.railway.app/api/webhooks/squarespace?machineId=clxxx..."
  *   node scripts/create-squarespace-webhook.mjs
  *

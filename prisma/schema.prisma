@@ -35,7 +35,11 @@ model Machine {
   squarespaceStoreUrl          String
   squarespaceSelectionPageUrl  String
   squarespaceWebhookSecret     String? // hex from Squarespace; null until provisioned or pasted
-  squarespaceCommerceApiKeyEnc String // AES-GCM encrypted Bearer token for Orders API
+  squarespaceCommerceApiKeyEnc String // AES-GCM encrypted Developer API key for Orders API
+  // Squarespace OAuth (refresh token) — required for Webhook Subscriptions API; optional if unused
+  squarespaceOAuthRefreshTokenEnc  String?
+  squarespaceOAuthAccessTokenEnc   String?
+  squarespaceOAuthAccessExpiresAt  DateTime?
   switchbotTokenEnc            String
   switchbotSecretEnc           String
   switchbotDeviceId            String

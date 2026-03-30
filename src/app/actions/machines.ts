@@ -18,6 +18,7 @@ import {
   fetchSwitchBotDevices,
   type SwitchBotDeviceRow,
 } from "@/lib/switchbot";
+import { resolveSquarespaceWebhookBearerToken } from "@/lib/squarespace-oauth-machine";
 
 const machineBase = z.object({
   machineName: z.string().min(1).max(120),
@@ -219,14 +220,19 @@ export async function provisionSquarespaceWebhook(
   });
   if (!machine) return { ok: false, error: "Not found" };
 
-  let apiKey: string;
+  let bearerToken: string;
   try {
-    apiKey = decryptSecret(machine.squarespaceCommerceApiKeyEnc);
-  } catch {
+    bearerToken = await resolveSquarespaceWebhookBearerToken(machine);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
     return {
       ok: false,
       error:
-        "Could not read your Commerce API key. Re-save it under Edit settings.",
+        msg.includes("OAuth is not configured") || msg.includes("not connected")
+          ? `${msg} Connect Squarespace on this machine’s page (or set SQUARESPACE_WEBHOOK_ACCESS_TOKEN), then try again.`
+          : msg.includes("ENCRYPTION_KEY") || msg.includes("invalid ciphertext")
+            ? "Could not read stored Squarespace credentials. Re-save your Commerce API key under Edit settings, or reconnect Squarespace OAuth."
+            : msg,
     };
   }
 
@@ -242,14 +248,23 @@ export async function provisionSquarespaceWebhook(
   }
 
   const result = await createSquarespaceWebhookSubscription(
-    apiKey,
+    bearerToken,
     endpointUrl
   );
 
   if (!result.ok) {
+    const apiMsg = squarespaceApiErrorMessage(result.status, result.body);
+    let suffix = "";
+    if (result.status === 401) {
+      const combined = `${apiMsg} ${JSON.stringify(result.body)}`.toLowerCase();
+      if (combined.includes("oauth")) {
+        suffix =
+          " Use “Connect Squarespace” on this page first (OAuth), or set SQUARESPACE_WEBHOOK_ACCESS_TOKEN. The site Developer API key alone cannot register webhooks. https://developers.squarespace.com/commerce-apis/webhook-subscriptions-overview";
+      }
+    }
     return {
       ok: false,
-      error: `Squarespace API (${result.status}): ${squarespaceApiErrorMessage(result.status, result.body)}`,
+      error: `Squarespace API (${result.status}): ${apiMsg}${suffix}`,
     };
   }
 
@@ -295,6 +310,30 @@ export async function rotateWebhookSecret(
     data: { squarespaceWebhookSecret: p.data },
   });
   logAudit(machineId, "webhook_secret_rotated", {});
+  revalidatePath(`/dashboard/machines/${machineId}`);
+  return { ok: true };
+}
+
+export async function disconnectSquarespaceOAuth(
+  machineId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Unauthorized" };
+
+  const existing = await prisma.machine.findFirst({
+    where: { id: machineId, userId: session.user.id },
+  });
+  if (!existing) return { ok: false, error: "Not found" };
+
+  await prisma.machine.update({
+    where: { id: machineId },
+    data: {
+      squarespaceOAuthRefreshTokenEnc: null,
+      squarespaceOAuthAccessTokenEnc: null,
+      squarespaceOAuthAccessExpiresAt: null,
+    },
+  });
+  logAudit(machineId, "squarespace_oauth_disconnected", {});
   revalidatePath(`/dashboard/machines/${machineId}`);
   return { ok: true };
 }

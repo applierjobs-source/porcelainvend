@@ -7,13 +7,22 @@ import { UnlockTestButton } from "@/components/UnlockTestButton";
 import { MachineDisableForm } from "@/components/MachineDisableForm";
 import { SecretRotateForm } from "@/components/SecretRotateForm";
 import { SquarespaceWebhookProvisionForm } from "@/components/SquarespaceWebhookProvisionForm";
+import { SquarespaceOAuthPanel } from "@/components/SquarespaceOAuthPanel";
+import { isSquarespaceOAuthConfigured } from "@/lib/squarespace-oauth";
 
 export default async function MachineDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ machineId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { machineId } = await params;
+  const sp = (await searchParams) ?? {};
+  const oauthFlash =
+    typeof sp.squarespace_oauth === "string" ? sp.squarespace_oauth : undefined;
+  const detailRaw = sp.detail;
+  const oauthDetail = Array.isArray(detailRaw) ? detailRaw[0] : detailRaw;
   const session = await auth();
   if (!session?.user?.id) notFound();
 
@@ -65,6 +74,33 @@ export default async function MachineDetailPage({
         </div>
       ) : null}
 
+      {oauthFlash === "connected" ? (
+        <div className="rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-950">
+          <strong>Squarespace connected.</strong> Use{" "}
+          <strong>Create webhook in Squarespace</strong> below to register your
+          endpoint and save the signing secret.
+        </div>
+      ) : null}
+      {oauthFlash === "denied" ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          Squarespace authorization was cancelled or denied
+          {typeof oauthDetail === "string" && oauthDetail
+            ? `: ${oauthDetail}`
+            : "."}
+        </div>
+      ) : null}
+      {oauthFlash === "token" && typeof oauthDetail === "string" ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+          <strong>Could not complete Squarespace connection.</strong>{" "}
+          {oauthDetail}
+        </div>
+      ) : null}
+      {oauthFlash === "invalid" || oauthFlash === "state" ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+          OAuth session expired or was invalid. Try connecting again.
+        </div>
+      ) : null}
+
       <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
           Kiosk &amp; webhook
@@ -104,15 +140,29 @@ export default async function MachineDetailPage({
             </a>
           </div>
         </dl>
-        <div className="mt-8 border-t border-zinc-100 pt-8">
-          <h3 className="text-sm font-medium text-zinc-800">
-            Create webhook (browser)
-          </h3>
-          <div className="mt-3">
-            <SquarespaceWebhookProvisionForm
-              machineId={machine.id}
-              webhookUrl={webhookUrl}
-            />
+        <div className="mt-8 border-t border-zinc-100 pt-8 space-y-6">
+          <div>
+            <h3 className="text-sm font-medium text-zinc-800">
+              Squarespace account (OAuth)
+            </h3>
+            <div className="mt-3">
+              <SquarespaceOAuthPanel
+                machineId={machine.id}
+                oauthConfigured={isSquarespaceOAuthConfigured()}
+                oauthConnected={Boolean(machine.squarespaceOAuthRefreshTokenEnc)}
+              />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-zinc-800">
+              Create webhook (browser)
+            </h3>
+            <div className="mt-3">
+              <SquarespaceWebhookProvisionForm
+                machineId={machine.id}
+                webhookUrl={webhookUrl}
+              />
+            </div>
           </div>
         </div>
       </section>

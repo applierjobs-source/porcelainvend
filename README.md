@@ -80,6 +80,11 @@ openssl rand -hex 32      # ENCRYPTION_KEY
 
 - Run **Node** (Docker, Fly, Railway, EC2, etc.) or a platform that supports **long-lived** connections if you rely on in-memory SSE (single-instance) or use a **pub/sub** for multi-instance.
 - Set `NEXT_PUBLIC_APP_URL` and `AUTH_URL` to your **public HTTPS** origin so dashboard links and webhook URLs are correct.
+- **Squarespace OAuth (recommended for webhooks):** Webhook registration requires an OAuth access token. Register an OAuth client with Squarespace ([OAuth guide](https://developers.squarespace.com/oauth)), then set:
+  - `SQUARESPACE_OAUTH_CLIENT_ID` — client id
+  - `SQUARESPACE_OAUTH_CLIENT_SECRET` — client secret
+  - Optional: `SQUARESPACE_OAUTH_REDIRECT_URI` — must match the redirect URI registered with Squarespace exactly (default: `{NEXT_PUBLIC_APP_URL}/api/squarespace/oauth/callback`).
+  Owners use **Connect Squarespace** on each machine page; refresh tokens are stored encrypted. Optional override: `SQUARESPACE_WEBHOOK_ACCESS_TOKEN` for a static Bearer token (short-lived).
 - Add PostgreSQL and run `npx prisma migrate deploy` in the release phase.
 - Terminate TLS at your reverse proxy; forward `X-Forwarded-Proto` / `X-Forwarded-Host` if you use `getPublicBaseUrl()` fallback from headers.
 
@@ -100,6 +105,7 @@ openssl rand -hex 32      # ENCRYPTION_KEY
 | `/kiosk/[machineId]` | Full-screen tablet UI |
 | `/kiosk/[machineId]/poster` | Printable poster |
 | `POST /api/webhooks/squarespace?machineId=` | Squarespace webhook |
+| `GET /api/squarespace/oauth/start`, `/callback` | Squarespace OAuth connect |
 | `GET /api/machines/[machineId]/events/stream` | Kiosk SSE |
 | `POST /api/machines/[machineId]/unlock-test` | Owner unlock test |
 | `POST /api/machines/[machineId]/heartbeat` | Kiosk liveness (health) |
