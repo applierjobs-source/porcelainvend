@@ -84,7 +84,7 @@ export function KioskClient({
       }).catch(() => {});
     };
     beat();
-    const t = setInterval(beat, 45_000);
+    const t = setInterval(beat, 5_000);
     return () => clearInterval(t);
   }, [machineId]);
 

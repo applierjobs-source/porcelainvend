@@ -6,13 +6,13 @@ import { isPayableOrder, fulfillOrderFromSquarespaceForMachine } from "@/lib/ful
 import { logAudit } from "@/lib/audit";
 
 const USER_AGENT = "PorcelainVend/1.0 (order-poll)";
-const POLL_DEBOUNCE_MS = 35_000;
+const POLL_DEBOUNCE_MS = 5_000;
 const LOOKBACK_FIRST_MS = 10 * 60 * 1000;
 
 const lastPollWallClock = new Map<string, number>();
 
 /**
- * While the tablet is on the kiosk page we get heartbeats ~45s apart. If the
+ * While the tablet is on the kiosk page we get heartbeats ~5s apart. If the
  * machine has no webhook signing secret yet, poll Squarespace Orders API
  * (Developer API key works) for recently modified orders and run the same
  * unlock path as webhooks. Stops polling once a webhook secret is configured.

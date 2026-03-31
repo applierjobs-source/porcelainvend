@@ -74,7 +74,7 @@ export default async function MachineDetailPage({
           <span className="mt-2 block text-amber-900/90">
             <strong>Fallback:</strong> While the tablet is on the{" "}
             <strong>kiosk</strong> page, this app polls Squarespace&apos;s Orders
-            API every ~45s using your saved <strong>Commerce API key</strong> to
+            API every ~5s using your saved <strong>Commerce API key</strong> to
             detect new paid orders (no OAuth approval required). Add the secret
             when you can for faster, push-style webhooks.
           </span>
